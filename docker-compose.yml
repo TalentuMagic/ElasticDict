@@ -1,0 +1,58 @@
+networks:
+  app-switch:
+    driver: bridge
+
+services:
+  es-cluster1:
+    image: 'bitnami/elasticsearch:latest'
+    environment:
+      - ELASTICSEARCH_NODE_NAME=node1
+      - ELASTICSEARCH_CLUSTER_NAME=cluster1
+      - ELASTICSEARCH_NETWORK_HOST=_local_
+      - INDEX_NAME=dex
+    ports:
+      - '9201:9200'
+      - '9301:9300'
+    volumes:
+      - esdata1:/bitnami/elasticsearch/data
+    networks:
+      - app-switch
+  es-cluster2:
+    image: 'bitnami/elasticsearch:latest'
+    environment:
+      - ELASTICSEARCH_NODE_NAME=node2
+      - ELASTICSEARCH_CLUSTER_NAME=cluster2
+      - ELASTICSEARCH_NETWORK_HOST=_local_
+      - INDEX_NAME=dex
+    ports:
+      - '9202:9200'
+      - '9302:9300'
+    volumes:
+      - esdata2:/bitnami/elasticsearch/data
+    networks:
+      - app-switch
+  
+  backend:
+    image: node:latest
+    container_name: express_backend
+    depends_on:
+      - es-cluster1
+      - es-cluster2
+    volumes:
+      - ./app:/usr/src/app
+    working_dir: /usr/src/app
+    environment:
+      - ES_CLUSTER1=http://es-cluster1:9200
+      - ES_CLUSTER2=http://es-cluster2:9200
+    networks:
+      - app-switch
+    ports:
+      - '5000:5000'
+    command: >
+      sh -c "npm init -y &&
+      npm install express axios &&
+      node app.js"
+
+volumes:
+  esdata1:
+  esdata2:
