@@ -102,11 +102,11 @@ capabilities, and Express.js for rapid, efficient, and native integration with t
 
 ### API Documentation with Swagger
 
-This project exposes interactive API documentation using **Swagger UI** and an auto-generated **OpenAPI 3.0** specification. The implementation is defined in `app.js` using the `swagger-jsdoc` and `swagger-ui-express` libraries, which generate the spec from annotated JSDoc comments and serve it under dedicated routes.:contentReference[oaicite:0]{index=0}
+This project exposes interactive API documentation using **Swagger UI** and an auto-generated **OpenAPI 3.0** specification. The implementation is defined in `app.js` using the `swagger-jsdoc` and `swagger-ui-express` libraries, which generate the spec from annotated JSDoc comments and serve it under dedicated routes.
 
 ### Swagger Setup
 
-The Swagger configuration is initialized in `app.js` using `swaggerJSDoc` with the following options:​:contentReference[oaicite:1]{index=1}
+The Swagger configuration is initialized in `app.js` using `swaggerJSDoc` with the following options:
 
 - `openapi: "3.0.0"` – OpenAPI version.
 - `info.title: "WordSearch API"` – API name.
@@ -117,11 +117,11 @@ The Swagger configuration is initialized in `app.js` using `swaggerJSDoc` with t
 The generated specification (`swaggerSpec`) is:
 
 - Exposed as an interactive UI at `GET /docs` using `swaggerUi.serve` and `swaggerUi.setup(swaggerSpec)`.
-- Available as raw JSON at `GET /openapi.json` by returning `swaggerSpec` from an Express route.:contentReference[oaicite:2]{index=2}
+- Available as raw JSON at `GET /openapi.json` by returning `swaggerSpec` from an Express route.
 
 ### OpenAPI Schemas
 
-The core data models are documented in `app.js` under the `components.schemas` section of the OpenAPI configuration:​:contentReference[oaicite:3]{index=3}
+The core data models are documented in `app.js` under the `components.schemas` section of the OpenAPI configuration:
 
 - **`Definition`**
 
@@ -132,11 +132,11 @@ The core data models are documented in `app.js` under the `components.schemas` s
   - `word` (string) – the dictionary word, e.g. `"apple"`.
   - `definitions` (array of `Definition`) – all definitions associated with the word.
 
-These schemas are reused across the routes (e.g., `POST /documents`, `PUT /documents/{id}`, and `GET /search`) via `$ref: '#/components/schemas/WordDoc'` to keep the API contract consistent.:contentReference[oaicite:4]{index=4}
+These schemas are reused across the routes (e.g., `POST /documents`, `PUT /documents/{id}`, and `GET /search`) via `$ref: '#/components/schemas/WordDoc'` to keep the API contract consistent.
 
 ### Swagger-Documented Routes
 
-Each Express route in `app.js` is documented with an `@openapi` JSDoc block directly above the handler implementation. These blocks declare HTTP methods, paths, request parameters, bodies, and responses. The main documented endpoints include:​:contentReference[oaicite:5]{index=5}
+Each Express route in `app.js` is documented with an `@openapi` JSDoc block directly above the handler implementation. These blocks declare HTTP methods, paths, request parameters, bodies, and responses. The main documented endpoints include:
 
 - **`GET /health`** – Returns the Elasticsearch cluster health.
 - **`POST /documents`** – Creates a new word document using the `WordDoc` schema as the request body.
@@ -144,17 +144,17 @@ Each Express route in `app.js` is documented with an `@openapi` JSDoc block dire
 - **`GET /search`** – Searches words and definitions with optional query (`q`) and type (`t`) parameters.
 - **`DELETE /document`** – Deletes documents by exact `word` via the query parameter `q`.
 
-When the application starts, `swagger-jsdoc` reads these annotations, merges them with the base configuration, and generates a complete OpenAPI 3.0 definition that is consumed by Swagger UI.:contentReference[oaicite:6]{index=6}
+When the application starts, `swagger-jsdoc` reads these annotations, merges them with the base configuration, and generates a complete OpenAPI 3.0 definition that is consumed by Swagger UI.
 
 ### Using Swagger UI
 
-Once the server is running (either via Docker or `node app.js`), the Swagger integration provides two main entry points:​:contentReference[oaicite:7]{index=7}
+Once the server is running (either via Docker or `node app.js`), the Swagger integration provides two main entry points.
 
 - **Interactive documentation:**  
   Open `http://localhost:5000/docs` in a browser to access the Swagger UI. From here, you can inspect all endpoints, view request/response schemas, and execute test calls directly against the running API.
 
 - **OpenAPI JSON specification:**  
-  Access `http://localhost:5000/openapi.json` to retrieve the underlying OpenAPI 3.0 document. This JSON can be used with tools such as API clients, documentation generators, or code generators to integrate with the **WordSearch API**.:contentReference[oaicite:8]{index=8}
+  Access `http://localhost:5000/openapi.json` to retrieve the underlying OpenAPI 3.0 document. This JSON can be used with tools such as API clients, documentation generators, or code generators to integrate with the **WordSearch API**.
 
 ## Elasticsearch Mapping Overview - Milestone 4
 
@@ -165,13 +165,13 @@ The `wordsearch` index stores dictionary entries shaped exactly like the `WordDo
   - `type` – used for exact filtering (e.g. `proper-noun`).
   - `meaning` – used for full-text search.
 
-This structure matches how the `/search` endpoint queries `word`, `definitions.type` and `definitions.meaning` using `term`, `prefix`, and nested `match` queries in `app.js`.:contentReference[oaicite:0]{index=0}
+This structure matches how the `/search` endpoint queries `word`, `definitions.type` and `definitions.meaning` using `term`, `prefix`, and nested `match` queries in `app.js`.
 
 ### Elasticsearch Index Creation
 
-Create the `wordsearch` index with a mapping aligned to the API queries in `app.js` as follows:​:contentReference[oaicite:1]{index=1}
+Create the `wordsearch` index with a mapping aligned to the API queries in `app.js` as follows:​
 
-```json
+```http
 PUT wordsearch
 {
   "mappings": {
@@ -201,7 +201,7 @@ The `word` field is used for:
 
 - Exact matches via `term` queries.
 - Prefix matches via `prefix` queries (e.g. partial word search).
-- Match queries in delete operations (`_delete_by_query` on `word`).:contentReference[oaicite:3]{index=3}
+- Match queries in delete operations (`_delete_by_query` on `word`).
 
 Recommended mapping:
 
@@ -216,7 +216,7 @@ Recommended mapping:
 The `definitions` field is modeled as a nested array to match the query behaviour in `/search`, which:
 
 - Filters by `definitions.type` using a nested `term` query and `inner_hits` (when the `t` query parameter is provided).
-- Searches inside `definitions.meaning` using a nested `match` query (when the `q` query parameter is provided).:contentReference[oaicite:5]{index=5}
+- Searches inside `definitions.meaning` using a nested `match` query (when the `q` query parameter is provided).
 
 Recommended nested mapping:
 
@@ -236,7 +236,7 @@ Recommended nested mapping:
 
 ### Example Indexed Document
 
-The following example shows how a single word entry is stored in the `wordsearch` index, matching the `WordDoc` + `Definition` schemas and the mapping described above:​:contentReference[oaicite:7]{index=7}
+The following example shows how a single word entry is stored in the `wordsearch` index, matching the `WordDoc` + `Definition` schemas and the mapping described above.
 
 ```json
 {
@@ -257,16 +257,16 @@ The following example shows how a single word entry is stored in the `wordsearch
 - **What:** A Node.js + Express API that stores and searches dictionary-style entries in Elasticsearch.
 - **Data model:** Each document uses a `WordDoc` schema with:
   - `word` (string)
-  - `definitions` (array of `Definition` objects with `type` and `meaning`).:contentReference[oaicite:0]{index=0}
-- **Swagger/OpenAPI:** Schemas (`Definition`, `WordDoc`) and routes are documented via `@openapi` JSDoc comments directly in `app.js`.:contentReference[oaicite:1]{index=1}
+  - `definitions` (array of `Definition` objects with `type` and `meaning`).
+- **Swagger/OpenAPI:** Schemas (`Definition`, `WordDoc`) and routes are documented via `@openapi` JSDoc comments directly in `app.js`.
 
 ### TL;DR – Running & Configuration
 
-- **Server port:** Express app listens on **port 5000** and logs `Backend server is running on http://localhost:5000`. :contentReference[oaicite:2]{index=2}
+- **Server port:** Express app listens on **port 5000** and logs `Backend server is running on http://localhost:5000`.
 - **Elasticsearch client:** Axios instance with:
   - `baseURL` from `ES_CLUSTER` env var or default `http://es-cluster:9200`.
-  - `timeout: 8000`, keep-alive HTTP agent, JSON headers.:contentReference[oaicite:3]{index=3}
-- **Index name:** `INDEX_NAME` env var or default `wordsearch`; all CRUD/search operations target this index (`/${INDEX_NAME}/_doc`, `/${INDEX_NAME}/_search`, `/${INDEX_NAME}/_delete_by_query`).:contentReference[oaicite:4]{index=4}
+  - `timeout: 8000`, keep-alive HTTP agent, JSON headers.
+- **Index name:** `INDEX_NAME` env var or default `wordsearch`; all CRUD/search operations target this index (`/${INDEX_NAME}/_doc`, `/${INDEX_NAME}/_search`, `/${INDEX_NAME}/_delete_by_query`).
 
 ### Kibana Dev Tools – Create `wordsearch` Index
 
@@ -306,11 +306,11 @@ GET wordsearch/_mapping
 
 - **Docs:**
   - `GET /docs` – Swagger UI served via `swagger-ui-express`.
-  - `GET /openapi.json` – Raw OpenAPI 3.0 spec generated by `swagger-jsdoc` scanning `./app.js`.:contentReference[oaicite:5]{index=5}
+  - `GET /openapi.json` – Raw OpenAPI 3.0 spec generated by `swagger-jsdoc` scanning `./app.js`.
 - **Core endpoints:**
   - `GET /health` – Proxies `/_cluster/health` on the configured Elasticsearch cluster.
   - `POST /documents` – Creates a document (`WordDoc`) in `/{INDEX_NAME}/_doc`.
   - `PUT /documents/{id}` – Replaces a document by Elasticsearch `_id`.
   - `GET /search` – Searches on `word` and nested `definitions` with `q` (query) and `t` (type) parameters using `bool` + nested queries and `inner_hits`.
-  - `DELETE /document` – Deletes documents by exact `word` via `_delete_by_query`.:contentReference[oaicite:6]{index=6}
-- **Reliability:** Global listeners log `unhandledRejection` and `uncaughtException`, and each route wraps Elasticsearch calls in `try/catch` returning HTTP 500 on errors.:contentReference[oaicite:7]{index=7}
+  - `DELETE /document` – Deletes documents by exact `word` via `_delete_by_query`.
+- **Reliability:** Global listeners log `unhandledRejection` and `uncaughtException`, and each route wraps Elasticsearch calls in `try/catch` returning HTTP 500 on errors.
