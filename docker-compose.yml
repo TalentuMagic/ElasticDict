@@ -12,7 +12,6 @@ services:
       - discovery.seed_hosts=es-node2
       - cluster.initial_master_nodes=es-cluster,es-node2
       - xpack.security.enabled=false
-      - bootstrap.memory_lock=true
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ulimits:
       memlock:
@@ -33,7 +32,6 @@ services:
       - discovery.seed_hosts=es-cluster
       - cluster.initial_master_nodes=es-cluster,es-node2
       - xpack.security.enabled=false
-      - bootstrap.memory_lock=true
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ulimits:
       memlock:
@@ -43,6 +41,20 @@ services:
       - "9201:9200"
     volumes:
       - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - app-switch
+  kibana:
+    image: "docker.io/kibana:9.2.2"
+    container_name: kibana
+    depends_on:
+      - es-cluster
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es-cluster:9200
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+      - XPACK_SECURITY_ENABLED=false
+    ports:
+      - "5601:5601"
     networks:
       - app-switch
   backend:
