@@ -1,8 +1,51 @@
 const express = require("express");
 const axios = require("axios");
 const http = require("http");
+const swaggerUi = require("swagger-ui-express");
+const swaggerJSDoc = require("swagger-jsdoc");
 
 const app = express();
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Definition:
+ *       type: object
+ *       properties:
+ *         type:
+ *           type: string
+ *           example: noun
+ *         meaning:
+ *           type: string
+ *           example: Round, edible fruit of an apple tree
+ *     WordDoc:
+ *       type: object
+ *       properties:
+ *         word:
+ *           type: string
+ *           example: apple
+ *         definitions:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Definition'
+ */
+
+// SwaggerAPI definition
+const swaggerSpec = swaggerJSDoc({
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "WordSearch API",
+      version: "1.0.0",
+    },
+    servers: [{ url: "http://localhost:5000" }],
+  },
+  apis: ["./app.js"],
+});
+
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/openapi.json", (req, res) => res.json(swaggerSpec));
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
@@ -26,6 +69,15 @@ process.on("uncaughtException", (err) =>
 );
 
 // Health Check Endpoint
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Elasticsearch cluster health
+ *     responses:
+ *       200:
+ *         description: Cluster health response
+ */
 app.get("/health", async (req, res) => {
   try {
     const response = await es.get(`/_cluster/health`);
@@ -40,6 +92,21 @@ app.get("/health", async (req, res) => {
 
 // Create Document (POST)
 // Expects a JSON payload with "word" and "definition" fields.
+/**
+ * @openapi
+ * /documents:
+ *   post:
+ *     summary: Create a document
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/WordDoc'
+ *     responses:
+ *       201:
+ *         description: Created
+ */
 app.post("/documents", async (req, res) => {
   try {
     const response = await es.post(`/${INDEX_NAME}/_doc`, req.body);
@@ -54,6 +121,27 @@ app.post("/documents", async (req, res) => {
 
 // Update Document (PUT)
 // Update an existing word definition document by its ID.
+/**
+ * @openapi
+ * /documents/{id}:
+ *   put:
+ *     summary: Update a document by Elasticsearch ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/WordDoc'
+ *     responses:
+ *       200:
+ *         description: Updated
+ */
 app.put("/documents/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -70,6 +158,32 @@ app.put("/documents/:id", async (req, res) => {
 
 // Search Endpoint (GET)
 // Query the index for matching word definitions.
+/**
+ * @openapi
+ * /search:
+ *   get:
+ *     summary: Search words and definitions
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Query text (word or meaning)
+ *       - in: query
+ *         name: t
+ *         schema:
+ *           type: string
+ *         description: Definition type (e.g. noun, verb)
+ *     responses:
+ *       200:
+ *         description: Search results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/WordDoc'
+ */
 app.get("/search", async (req, res) => {
   // normalize input (trim + strip optional quotes)
   const normalize = (v) =>
@@ -149,6 +263,24 @@ app.get("/search", async (req, res) => {
 
 // Delete endpoint (DELETE)
 // Delete entry by query.
+/**
+ * @openapi
+ * /document:
+ *   delete:
+ *     summary: Delete documents by exact word
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Exact word to delete
+ *     responses:
+ *       200:
+ *         description: Delete by query response
+ *       400:
+ *         description: Missing query parameter
+ */
 app.delete("/document", async (req, res) => {
   const query = req.query.q;
 
