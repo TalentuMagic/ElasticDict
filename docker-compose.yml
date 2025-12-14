@@ -3,55 +3,61 @@ networks:
     driver: bridge
 
 services:
-  es-cluster1:
-    image: 'bitnami/elasticsearch:latest'
+  es-cluster:
+    image: "docker.io/elasticsearch:9.2.2"
+    container_name: es-cluster
     environment:
-      - ELASTICSEARCH_NODE_NAME=node1
-      - ELASTICSEARCH_CLUSTER_NAME=cluster1
-      - ELASTICSEARCH_NETWORK_HOST=_local_
-      - INDEX_NAME=dex
+      - cluster.name=es-cluster
+      - node.name=es-cluster
+      - discovery.seed_hosts=es-node2
+      - cluster.initial_master_nodes=es-cluster,es-node2
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
-      - '9201:9200'
-      - '9301:9300'
+      - "9200:9200"
     volumes:
-      - esdata1:/bitnami/elasticsearch/data
+      - esdata1:/usr/share/elasticsearch/data
     networks:
       - app-switch
-  es-cluster2:
-    image: 'bitnami/elasticsearch:latest'
+  es-node2:
+    image: "docker.io/elasticsearch:9.2.2"
+    container_name: es-node2
     environment:
-      - ELASTICSEARCH_NODE_NAME=node2
-      - ELASTICSEARCH_CLUSTER_NAME=cluster2
-      - ELASTICSEARCH_NETWORK_HOST=_local_
-      - INDEX_NAME=dex
+      - cluster.name=es-cluster
+      - node.name=es-node2
+      - discovery.seed_hosts=es-cluster
+      - cluster.initial_master_nodes=es-cluster,es-node2
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
-      - '9202:9200'
-      - '9302:9300'
+      - "9201:9200"
     volumes:
-      - esdata2:/bitnami/elasticsearch/data
+      - esdata2:/usr/share/elasticsearch/data
     networks:
       - app-switch
-  
   backend:
-    image: node:latest
+    build: .
     container_name: express_backend
     depends_on:
-      - es-cluster1
-      - es-cluster2
-    volumes:
-      - ./app:/usr/src/app
-    working_dir: /usr/src/app
+      - es-cluster
+      - es-node2
     environment:
-      - ES_CLUSTER1=http://es-cluster1:9200
-      - ES_CLUSTER2=http://es-cluster2:9200
+      - ES_CLUSTER=http://es-cluster:9200
+      - INDEX_NAME=wordsearch
     networks:
       - app-switch
     ports:
-      - '5000:5000'
-    command: >
-      sh -c "npm init -y &&
-      npm install express axios &&
-      node app.js"
+      - "5000:5000"
 
 volumes:
   esdata1:
